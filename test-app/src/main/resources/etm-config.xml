@@ -1,0 +1,15 @@
+<applicationConfig xmlns="http://www.edmunds.com/etm/1.0">
+    <application>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>${project.artifactId}</artifactId>
+        <version>${project.version}</version>
+    </application>
+    <urlRules>
+        <urlRule>/test-app/**</urlRule>
+        <urlRule>/[make]/[model]/[year]/**</urlRule>
+    </urlRules>
+    <httpMonitor>
+        <url>/test-app/</url>
+        <content>ETM client library</content>
+    </httpMonitor>
+</applicationConfig>

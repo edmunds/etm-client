@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <!-- console -->
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{hh:mm:ss} %c %M %p line %L - %m%n"/>
+        </layout>
+    </appender>
+
+    <!-- etm.log -->
+    <appender name="ETM" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="/logs/etm-test-app1.log"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="3"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{hh:mm:ss} %c %M %p line %L - %m%n"/>
+        </layout>
+    </appender>
+
+    <root>
+        <param name="level" value="debug"/>
+        <appender-ref ref="ETM"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</log4j:configuration>

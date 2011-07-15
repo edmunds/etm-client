@@ -1,0 +1,10 @@
+<applicationConfig xmlns="http://www.edmunds.com/etm/1.0">
+    <application>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>${project.artifactId}</artifactId>
+        <version>${project.version}</version>
+    </application>
+    <urlRules>
+        <urlRule>/test-app2/**</urlRule>
+    </urlRules>
+</applicationConfig>
