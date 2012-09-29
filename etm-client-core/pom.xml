@@ -7,9 +7,9 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>etm-client-impl</artifactId>
+    <artifactId>etm-client-core</artifactId>
     <packaging>jar</packaging>
-    <name>ETM Client Library - Implementation</name>
+    <name>ETM Client Core</name>
 
     <dependencies>
 
@@ -22,11 +22,6 @@
         <dependency>
             <groupId>com.edmunds.oss.common</groupId>
             <artifactId>edmunds-configuration</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.edmunds.oss.etm</groupId>
-            <artifactId>etm-client-core</artifactId>
         </dependency>
 
         <!-- Other Dependencies -->
@@ -48,24 +43,6 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-
-        <!-- Provided Dependencies -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.tomcat</groupId>
-            <artifactId>catalina</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Test Dependencies -->

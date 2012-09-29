@@ -43,8 +43,6 @@ import java.io.IOException;
  */
 @Component
 public class ClientManager implements InitializingBean, ZooKeeperConnectionListener {
-    private static final String PORT_PROPERTY = "etm.web.port";
-
     private static final Logger logger = Logger.getLogger(ClientManager.class);
 
     public static String createNodeName(HostAddressDto address, String contextPath) {
@@ -75,7 +73,6 @@ public class ClientManager implements InitializingBean, ZooKeeperConnectionListe
     }
 
     private final ZooKeeperConnection connection;
-    private final ListenPortDetectorFactory listenPortDetectorFactory;
     private final ClientPaths clientPaths;
     private final ObjectSerializer objectSerializer;
     private final ClientSettings clientSettings;
@@ -86,20 +83,17 @@ public class ClientManager implements InitializingBean, ZooKeeperConnectionListe
     /**
      * Auto-wire constructor.
      *
-     * @param connection                the ZooKeeper connection
-     * @param listenPortDetectorFactory detects the port the app server is running on
-     * @param clientPaths               the client paths
-     * @param objectSerializer          object serializer
-     * @param clientSettings            etm client configuration bean
+     * @param connection       the ZooKeeper connection
+     * @param clientPaths      the client paths
+     * @param objectSerializer object serializer
+     * @param clientSettings   etm client configuration bean
      */
     @Autowired
     public ClientManager(ZooKeeperConnection connection,
-                         ListenPortDetectorFactory listenPortDetectorFactory,
                          ClientPaths clientPaths,
                          ObjectSerializer objectSerializer,
                          ClientSettings clientSettings) {
         this.connection = connection;
-        this.listenPortDetectorFactory = listenPortDetectorFactory;
         this.clientPaths = clientPaths;
         this.objectSerializer = objectSerializer;
         this.clientSettings = clientSettings;
@@ -116,19 +110,13 @@ public class ClientManager implements InitializingBean, ZooKeeperConnectionListe
      * <p/>
      * The nodes created by the client are deleted automatically when the client disconnects.
      *
-     * @param serverInfo  the server the app is running under (used to detect the listening port)
-     * @param ipAddress   the IP address of this machine
-     * @param contextPath the servlet context path
      * @param configDto   client configuration object
      */
-    public void register(String serverInfo, String ipAddress, String contextPath,
-                         ClientConfigDto configDto) {
+    public void register(ClientConfigDto configDto) {
 
         if (connection == null || configDto == null || !clientSettings.isEnabled()) {
             return;
         }
-        configDto.setHostAddress(createHostAddress(serverInfo, ipAddress));
-        configDto.setContextPath(contextPath);
 
         clientConfigDto = configDto;
         connection.connect();
@@ -240,19 +228,5 @@ public class ClientManager implements InitializingBean, ZooKeeperConnectionListe
         } else {
             logger.error("Unexpected ZooKeeper result: " + rc + " : " + path);
         }
-    }
-
-    private HostAddressDto createHostAddress(String serverInfo, String ipAddress) {
-        final String listenPortOverride = System.getProperty(PORT_PROPERTY);
-
-        final int listenPort;
-        if (StringUtils.isNumeric(listenPortOverride)) {
-            listenPort = Integer.parseInt(listenPortOverride);
-        } else {
-            // Lookup the listen port.
-            listenPort = listenPortDetectorFactory.getListenPortDetector(serverInfo).getListenPort();
-        }
-
-        return new HostAddressDto(ipAddress, listenPort);
     }
 }

@@ -15,24 +15,24 @@
  */
 package com.edmunds.etm.client.impl;
 
+import com.edmunds.etm.client.util.SpringContextLoader;
 import com.edmunds.etm.common.thrift.ClientConfigDto;
 import com.edmunds.etm.common.thrift.MavenModuleDto;
 import com.edmunds.etm.common.xml.XmlMarshaller;
 import com.edmunds.etm.common.xml.XmlValidationException;
 import com.edmunds.etm.common.xml.XmlValidator;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.context.ApplicationContext;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Main class of etm client. <p/> The etm client is instanced as a servlet context listener. It will connect to the
@@ -65,7 +65,6 @@ public class ClientServletContextListener implements ServletContextListener {
      */
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
-
         logger.debug("Starting ETM listener.");
         ServletContext ctx = servletContextEvent.getServletContext();
 
@@ -75,29 +74,27 @@ public class ClientServletContextListener implements ServletContextListener {
         ClientConfigDto clientConfig = readClientConfiguration();
         MavenModuleDto mavenModule = clientConfig.getMavenModule();
 
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(String.format("ETM application: %s", clientConfig.getMavenModule()));
         }
 
         // validate IP address and maven module
-        if(StringUtils.isBlank(ipAddress)) {
+        if (StringUtils.isBlank(ipAddress)) {
             logger.error("Unable to register with ETM: IP address is blank");
             return;
-        } else if(mavenModule == null) {
+        } else if (mavenModule == null) {
             logger.error("Unable to register with ETM: Maven artifact information is missing");
             return;
         }
 
-        // create Spring application context
-        logger.debug("Initializing ETM Spring context");
-        final ClassPathXmlApplicationContext appCtx = new ClassPathXmlApplicationContext();
-        appCtx.addBeanFactoryPostProcessor(getConfigurer(mavenModule));
-        appCtx.setConfigLocation(CLIENT_CONTEXT_PATH);
-        appCtx.refresh();
+        final ApplicationContext appCtx =
+                SpringContextLoader.loadClassPathSpringContext(CLIENT_CONTEXT_PATH, getMavenProperties(mavenModule));
+
+        final ClientRegistrationHelper helper = (ClientRegistrationHelper) appCtx.getBean("clientRegistrationHelper");
+        clientManager = (ClientManager) appCtx.getBean("clientManager");
 
         // register with the ETM controller
-        clientManager = (ClientManager) appCtx.getBean("clientManager");
-        clientManager.register(ctx.getServerInfo(), ipAddress, contextPath, clientConfig);
+        helper.register(ctx.getServerInfo(), ipAddress, contextPath, clientConfig);
     }
 
     /**
@@ -108,7 +105,7 @@ public class ClientServletContextListener implements ServletContextListener {
      */
     @Override
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
-        if(clientManager != null) {
+        if (clientManager != null) {
             clientManager.shutdown();
         }
     }
@@ -116,27 +113,24 @@ public class ClientServletContextListener implements ServletContextListener {
     private String getIpAddress() {
         try {
             return InetAddress.getLocalHost().getHostAddress();
-        } catch(UnknownHostException e) {
+        } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private BeanFactoryPostProcessor getConfigurer(final MavenModuleDto mavenModule) {
+    private Properties getMavenProperties(MavenModuleDto mavenModule) {
         final Properties properties = new Properties();
         properties.setProperty("maven.groupId", mavenModule.getGroupId());
         properties.setProperty("maven.artifactId", mavenModule.getArtifactId());
         properties.setProperty("maven.version", mavenModule.getVersion());
-
-        final PropertyPlaceholderConfigurer configurer = new PropertyPlaceholderConfigurer();
-        configurer.setProperties(properties);
-        return configurer;
+        return properties;
     }
 
     private ClientConfigDto readClientConfiguration() {
         byte[] xmlData;
         try {
             xmlData = IOUtils.toByteArray(getClass().getResourceAsStream(ETM_CONFIG_PATH));
-        } catch(IOException e) {
+        } catch (IOException e) {
             String message = String.format("Could not read ETM configuration file at %s", ETM_CONFIG_PATH);
             logger.error(message);
             throw new RuntimeException(message, e);
@@ -151,7 +145,7 @@ public class ClientServletContextListener implements ServletContextListener {
         // Validate XML
         try {
             xmlValidator.validate(xmlData, XmlValidator.CLIENT_CONFIG_XSD);
-        } catch(XmlValidationException e) {
+        } catch (XmlValidationException e) {
             throw new RuntimeException("ETM XML configuration file is invalid", e);
         }
 
